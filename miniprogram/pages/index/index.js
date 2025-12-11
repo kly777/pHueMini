@@ -22,7 +22,9 @@ Page({
         lastLogTime: 0,
         lastStatsUpdate: 0,
         captureTimer: null,
-        renderTimer: null
+        renderTimer: null,
+        cameraReady: false,
+        cameraContext: null
     },
 
     onReady() {
@@ -39,6 +41,11 @@ Page({
         this.setData({ canvasCtx: ctx });
         console.log('[CANVAS] Canvas上下文初始化成功');
 
+        // 创建 camera 上下文
+        const cameraContext = wx.createCameraContext();
+        this.setData({ cameraContext });
+        console.log('[CAMERA] 上下文创建成功');
+
         // 关键修复2：延迟初始化，确保camera节点已渲染
         wx.nextTick(() => {
             this.initWebSocket();
@@ -47,10 +54,16 @@ Page({
     },
 
     // 新增：检查camera节点是否可用
-    checkCameraNode() {
-        console.log('[NODE] 开始检查camera节点');
-        const query = wx.createSelectorQuery().in(this); // 指定在当前页面上下文中
+    checkCameraNode(retryCount = 0) {
+        console.log(`[NODE] 开始检查camera节点 (重试次数: ${retryCount})`);
+        // 如果 camera 上下文已存在且 cameraReady 为 true，则跳过检查
+        if (this.data.cameraContext && this.data.cameraReady) {
+            console.log('[NODE] 摄像头已就绪，跳过检查');
+            return;
+        }
 
+        // 使用查询获取 camera 尺寸信息（可选）
+        const query = wx.createSelectorQuery().in(this);
         query.select(CAMERA_NODE_SELECTOR).fields({
             node: true,
             size: true,
@@ -59,6 +72,13 @@ Page({
             console.log('[NODE] 查询结果:', res);
 
             if (!res[0] || !res[0].node) {
+                if (retryCount < 3) {
+                    console.warn(`[NODE] 摄像头节点未就绪，${500}ms后重试 (${retryCount + 1}/3)`);
+                    setTimeout(() => {
+                        this.checkCameraNode(retryCount + 1);
+                    }, 500);
+                    return;
+                }
                 console.error('[NODE] 严重错误：无法获取camera节点，页面结构可能有问题');
                 wx.showModal({
                     title: '摄像头初始化失败',
@@ -73,6 +93,8 @@ Page({
 
             console.log(`[NODE] 摄像头节点可用，尺寸: ${res[0].width}x${res[0].height}`);
             console.log(`[NODE] 节点位置:`, res[0]);
+            // 设置 cameraReady 标志
+            this.setData({ cameraReady: true });
         });
     },
 
@@ -300,7 +322,7 @@ Page({
 
             // 发送帧数据
             this.data.socketTask.send({
-                frameData,
+                data: frameData,
                 success: () => {
                     if (frameIndex % LOG_FRAME_INTERVAL === 0) {
                         console.log(`[WS] → 帧 #${frameIndex} 发送成功`);
@@ -339,87 +361,29 @@ Page({
 
     async captureCameraFrame() {
         return new Promise((resolve, reject) => {
-            console.log('[CAPTURE] 开始帧捕获流程');
+            console.log('[CAPTURE] 开始帧捕获流程（使用拍照）');
+            const cameraContext = this.data.cameraContext;
+            if (!cameraContext) {
+                reject(new Error('摄像头上下文未初始化'));
+                return;
+            }
 
-            // 关键修复5：使用正确的查询上下文
-            const query = wx.createSelectorQuery().in(this);
-            const systemInfo = wx.getSystemInfoSync();
-
-            query.select(CAMERA_NODE_SELECTOR).fields({
-                node: true,
-                size: true
-            }).exec((res) => {
-                if (!res[0] || !res[0].node) {
-                    console.error('[CAPTURE] 节点查询失败，结果为空', res);
-
-                    // 关键修复6：提供详细的错误上下文
-                    wx.createSelectorQuery().in(this).selectAll('*').boundingClientRect().exec((allNodes) => {
-                        console.log('[DEBUG] 页面所有节点:', allNodes);
-                    });
-
-                    reject(new Error('无法获取摄像头节点，请检查页面结构和权限'));
-                    return;
-                }
-
-                const cameraNode = res[0].node;
-                console.log(`[CAPTURE] 摄像头节点尺寸: ${cameraNode.width}x${cameraNode.height}`);
-
-                try {
-                    // 关键修复7：检查节点类型
-                    if (typeof cameraNode.requestFrame !== 'function') {
-                        console.error('[CAPTURE] 节点不是有效的camera节点，类型:', typeof cameraNode);
-                        reject(new Error('无效的摄像头节点类型'));
-                        return;
-                    }
-
-                    // 创建离屏Canvas，使用屏幕实际尺寸
-                    const canvas = wx.createOffscreenCanvas({
-                        type: '2d',
-                        width: systemInfo.windowWidth,
-                        height: systemInfo.windowHeight
-                    });
-                    const ctx = canvas.getContext('2d');
-
-                    // 绘制当前帧
-                    if (cameraNode.width && cameraNode.height) {
-                        const camRatio = cameraNode.width / cameraNode.height;
-                        const screenRatio = systemInfo.windowWidth / systemInfo.windowHeight;
-
-                        let drawWidth, drawHeight, offsetX = 0, offsetY = 0;
-
-                        if (camRatio > screenRatio) {
-                            // 摄像头更宽
-                            drawHeight = systemInfo.windowHeight;
-                            drawWidth = systemInfo.windowHeight * camRatio;
-                            offsetX = (systemInfo.windowWidth - drawWidth) / 2;
-                        } else {
-                            // 摄像头更高
-                            drawWidth = systemInfo.windowWidth;
-                            drawHeight = systemInfo.windowWidth / camRatio;
-                            offsetY = (systemInfo.windowHeight - drawHeight) / 2;
-                        }
-
-                        ctx.drawImage(cameraNode, offsetX, offsetY, drawWidth, drawHeight);
-                    } else {
-                        // 备用方案
-                        ctx.drawImage(cameraNode, 0, 0, systemInfo.windowWidth, systemInfo.windowHeight);
-                    }
-
-                    // 转换为压缩的JPG
-                    canvas.toTempFilePath({
-                        quality: 0.6,
-                        success: ({ tempFilePath }) => {
-                            wx.getFileSystemManager().readFile({
-                                filePath: tempFilePath,
-                                success: ({ data }) => resolve(data),
-                                fail: (err) => reject(new Error(`读取帧失败: ${err.errMsg}`))
-                            });
+            cameraContext.takePhoto({
+                quality: 'low', // 低质量以减小尺寸
+                success: (res) => {
+                    console.log('[CAPTURE] 拍照成功，临时文件路径:', res.tempImagePath);
+                    wx.getFileSystemManager().readFile({
+                        filePath: res.tempImagePath,
+                        success: ({ data }) => {
+                            console.log(`[CAPTURE] 读取文件成功，大小: ${data.byteLength} 字节`);
+                            resolve(data);
                         },
-                        fail: (err) => reject(new Error(`截图失败: ${err.errMsg}`))
+                        fail: (err) => reject(new Error(`读取照片失败: ${err.errMsg}`))
                     });
-                } catch (e) {
-                    console.error('[CAPTURE] 处理异常', e);
-                    reject(e);
+                },
+                fail: (err) => {
+                    console.error('[CAPTURE] 拍照失败', err);
+                    reject(new Error(`拍照失败: ${err.errMsg}`));
                 }
             });
         });
@@ -500,6 +464,13 @@ Page({
             case 3: return '已关闭';
             default: return '未知状态';
         }
+    },
+
+    cameraInitDone(e) {
+        console.log('[CAMERA] 初始化完成', e.detail);
+        this.setData({ cameraReady: true });
+        // 重新检查节点
+        this.checkCameraNode();
     },
 
     cameraError(e) {
