@@ -1,0 +1,24 @@
+<!-- realtime.wxml -->
+<view class="container">
+  <!-- 关键修复：使用ID选择器，确保节点可查询 -->
+  <camera 
+    id="realtime-camera"
+    device-position="back" 
+    flash="off"
+    binderror="cameraError"
+    style="width: 100vw; height: 100vh; position: fixed; top: 0; left: 0; z-index: 1;"
+  ></camera>
+  
+  <canvas 
+    canvas-id="overlayCanvas"
+    style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 2;"
+  ></canvas>
+  
+  <button 
+    class="control-btn" 
+    bindtap="toggleProcessing"
+    style="position: fixed; bottom: 40rpx; left: 50%; transform: translateX(-50%); z-index: 3;"
+  >
+    {{ isProcessing ? '停止分析' : '开始分析' }}
+  </button>
+</view>

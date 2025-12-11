@@ -1,0 +1,6 @@
+{
+  "navigationBarTitleText": "pHue",
+  "usingComponents": {
+    "cloud-tip-modal": "/components/cloudTipModal/index"
+  }
+}
