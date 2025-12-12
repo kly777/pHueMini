@@ -1,5 +1,5 @@
 // realtime.js (修复版)
-const FPS = 10;
+const FPS = 3;
 const FRAME_INTERVAL = 1000 / FPS;
 const MAX_FRAME_SIZE = 300 * 1024;
 const LOG_FRAME_INTERVAL = 5;
@@ -37,7 +37,7 @@ Page({
         // 关键修复1：使用createSelectorQuery的正确作用域
         const ctx = wx.createCanvasContext('overlayCanvas', this); // 传入this上下文
         ctx.lineWidth = 2;
-        ctx.font = '14px sans-serif';
+        ctx.font = '20px sans-serif';
         this.setData({ canvasCtx: ctx });
         console.log('[CANVAS] Canvas上下文初始化成功');
 
@@ -398,6 +398,8 @@ Page({
 
         // 清除上一帧
         ctx.clearRect(0, 0, systemInfo.windowWidth, systemInfo.windowHeight);
+        // 重置所有变换（关键修复）
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
 
         // 绘制检测结果
         if (result.objects && Array.isArray(result.objects)) {
@@ -413,13 +415,15 @@ Page({
                 ctx.strokeRect(x - w / 2, y - h / 2, w, h);
 
                 ctx.setFillStyle('#ffffff');
-                ctx.fillText(`${obj.label} ${(obj.confidence * 100).toFixed(0)}%`, x - w / 2 + 5, y - h / 2 + 18);
+                const phText = obj.ph_value !== undefined ? `pH: ${obj.ph_value}` : '';
+                const labelText = `${obj.label} ${(obj.confidence * 100).toFixed(0)}% ${phText}`;
+                ctx.fillText(labelText, x - w / 2 + 5, y - h / 2 + 25);
             });
         }
 
         // 绘制性能指标
         ctx.setFillStyle('#00ff00');
-        ctx.setFontSize(14);
+        ctx.setFontSize(20);
         ctx.fillText(`FPS: ${this.data.stats.fps.toFixed(1)} | 延迟: ${this.data.stats.latency}ms`, 10, 30);
 
         ctx.draw();
