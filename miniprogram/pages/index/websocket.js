@@ -34,10 +34,10 @@ module.exports = {
                 console.log('[WS] 忽略消息：已停止处理');
                 return;
             }
-
+    
             const now = Date.now();
             const msgSize = res.data?.length || 0;
-
+    
             try {
                 const data = JSON.parse(res.data);
                 console.log(`[WS] ← 接收消息 (${msgSize}字节)`, {
@@ -45,19 +45,30 @@ module.exports = {
                     timestamp: data.timestamp,
                     latency: data.latency?.total
                 });
-
+    
                 if (data.type === 'result') {
                     // 再次验证（双重保险）
                     if (!this.data.isProcessing) {
                         console.log('[WS] 忽略结果：已停止处理');
                         return;
                     }
-
+    
                     this.setData(prev => ({
                         stats: { ...prev.stats, receivedResults: prev.stats.receivedResults + 1 }
                     }));
                     this.renderResult(data.payload, data.timestamp);
-                    this.updateStats(data.latency?.total || 0);
+                    
+                    // 获取最近发送的帧ID用于延迟计算
+                    let frameId = null;
+                    if (this.frameTimestamps && this.frameTimestamps.size > 0) {
+                        // 使用最早发送的帧（FIFO）
+                        const entries = Array.from(this.frameTimestamps.entries());
+                        if (entries.length > 0) {
+                            frameId = entries[0][0]; // 第一个键
+                        }
+                    }
+                    
+                    this.updateStats(data.latency?.total || 0, frameId);
                 }
             } catch (e) {
                 console.error('[WS] 消息解析失败', e, '原始数据:', res.data);

@@ -24,10 +24,14 @@ module.exports = {
                 const w = obj.width * systemInfo.windowWidth;
                 const h = obj.height * systemInfo.windowHeight;
 
+                // 设置线宽和样式
+                ctx.setLineWidth(2);
                 ctx.setStrokeStyle(obj.confidence > 0.8 ? '#00ff00' : '#ffcc00');
                 ctx.strokeRect(x - w / 2, y - h / 2, w, h);
 
+                // 设置文字样式
                 ctx.setFillStyle('#ffffff');
+                ctx.setFontSize(20); // 显式设置字体大小
                 const phText = obj.ph_value !== undefined ? `pH: ${obj.ph_value}` : '';
                 const labelText = `${obj.label} ${(obj.confidence * 100).toFixed(0)}% ${phText}`;
                 ctx.fillText(labelText, x - w / 2 + 5, y - h / 2 + 25);
