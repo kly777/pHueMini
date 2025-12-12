@@ -9,6 +9,7 @@ Page({
         isProcessing: false,
         socketTask: null,
         deviceId: wx.getStorageSync('deviceId') || Date.now().toString(36),
+        FPS: 2, // 目标帧率，用于显示
         lastCaptureTime: 0,
         stats: {
             fps: 0,

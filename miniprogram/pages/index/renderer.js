@@ -32,7 +32,7 @@ module.exports = {
                 // 设置文字样式
                 ctx.setFillStyle('#ffffff');
                 ctx.setFontSize(20); // 显式设置字体大小
-                const phText = obj.ph_value !== undefined ? `pH: ${obj.ph_value}` : '';
+                const phText = obj.ph_value !== undefined ? `pH: ${obj.ph_value.toFixed(2)}` : '';
                 const labelText = `${obj.label} ${(obj.confidence * 100).toFixed(0)}% ${phText}`;
                 ctx.fillText(labelText, x - w / 2 + 5, y - h / 2 + 25);
             });

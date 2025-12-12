@@ -15,11 +15,42 @@
     style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 2;"
   ></canvas>
   
+  <!-- 状态指示器 -->
+  <view class="status-bar" wx:if="{{isProcessing}}">
+    <view class="status-indicator">
+      <view class="pulse-dot"></view>
+      <text class="status-text">实时分析中...</text>
+    </view>
+    <view class="stats-display">
+      <text>FPS: {{stats.fps.toFixed(1)}} | 延迟: {{stats.latency.toFixed(0)}}ms</text>
+    </view>
+  </view>
+  
+  <!-- 连接状态 -->
+  <view class="connection-status" wx:if="{{socketTask && socketTask.readyState === 1}}">
+    <view class="connection-dot connected"></view>
+    <text class="connection-text">已连接</text>
+  </view>
+  <view class="connection-status" wx:elif="{{socketTask && socketTask.readyState === 0}}">
+    <view class="connection-dot connecting"></view>
+    <text class="connection-text">连接中...</text>
+  </view>
+  
+  <!-- 主控制按钮 -->
   <button 
-    class="control-btn" 
+    class="control-btn {{isProcessing ? 'stop-btn' : 'start-btn'}}" 
     bindtap="toggleProcessing"
-    style="position: fixed; bottom: 40rpx; left: 50%; transform: translateX(-50%); z-index: 3;"
   >
-    {{ isProcessing ? '停止分析' : '开始分析' }}
+    <view class="btn-content">
+      <view class="btn-icon">{{isProcessing ? '⏹️' : '▶️'}}</view>
+      <text class="btn-text">{{ isProcessing ? '停止分析' : '开始分析' }}</text>
+    </view>
+    <view class="btn-subtext" wx:if="{{!isProcessing}}">点击开始实时物体检测</view>
   </button>
+  
+  <!-- 底部信息栏 -->
+  <view class="info-bar">
+    <text>设备ID: {{deviceId}}</text>
+    <text>帧率: {{FPS}} FPS</text>
+  </view>
 </view>

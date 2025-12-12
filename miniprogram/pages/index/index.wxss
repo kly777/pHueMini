@@ -1,4 +1,213 @@
 /**index.wxss**/
 
 .container {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+}
+
+/* 状态栏 */
+.status-bar {
+  position: fixed;
+  top: 40rpx;
+  left: 0;
+  right: 0;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.status-indicator {
+  display: flex;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.7);
+  padding: 16rpx 32rpx;
+  border-radius: 50rpx;
+  backdrop-filter: blur(10px);
+  border: 1rpx solid rgba(255, 255, 255, 0.2);
+}
+
+.pulse-dot {
+  width: 20rpx;
+  height: 20rpx;
+  background: #07C160;
+  border-radius: 50%;
+  margin-right: 16rpx;
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.2); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+.status-text {
+  color: #FFFFFF;
+  font-size: 28rpx;
+  font-weight: 500;
+}
+
+.stats-display {
+  margin-top: 16rpx;
+  background: rgba(0, 0, 0, 0.6);
+  padding: 12rpx 24rpx;
+  border-radius: 30rpx;
+  backdrop-filter: blur(10px);
+}
+
+.stats-display text {
+  color: #FFFFFF;
+  font-size: 24rpx;
+  opacity: 0.9;
+}
+
+/* 连接状态 */
+.connection-status {
+  position: fixed;
+  top: 40rpx;
+  right: 40rpx;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.7);
+  padding: 12rpx 24rpx;
+  border-radius: 40rpx;
+  backdrop-filter: blur(10px);
+}
+
+.connection-dot {
+  width: 16rpx;
+  height: 16rpx;
+  border-radius: 50%;
+  margin-right: 12rpx;
+}
+
+.connection-dot.connected {
+  background: #07C160;
+  box-shadow: 0 0 10rpx #07C160;
+}
+
+.connection-dot.connecting {
+  background: #FA9D3B;
+  animation: blink 1s infinite;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+.connection-text {
+  color: #FFFFFF;
+  font-size: 24rpx;
+}
+
+/* 主控制按钮 */
+.control-btn {
+  position: fixed !important;
+  bottom: 120rpx !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  z-index: 20 !important;
+  width: 80% !important;
+  max-width: 600rpx !important;
+  height: auto !important;
+  padding: 0 !important;
+  border: none !important;
+  border-radius: 60rpx !important;
+  box-shadow: 0 10rpx 30rpx rgba(0, 0, 0, 0.3) !important;
+  overflow: hidden !important;
+  transition: all 0.3s ease !important;
+}
+
+.control-btn::after {
+  border: none !important;
+}
+
+.control-btn.start-btn {
+  background: linear-gradient(135deg, #07C160, #05A84F) !important;
+}
+
+.control-btn.stop-btn {
+  background: linear-gradient(135deg, #FA5151, #D84040) !important;
+}
+
+.control-btn:active {
+  transform: translateX(-50%) scale(0.98) !important;
+  box-shadow: 0 5rpx 15rpx rgba(0, 0, 0, 0.2) !important;
+}
+
+.btn-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40rpx 0 30rpx;
+}
+
+.btn-icon {
+  font-size: 60rpx;
+  margin-bottom: 20rpx;
+  opacity: 0.9;
+}
+
+.btn-text {
+  color: #FFFFFF;
+  font-size: 36rpx;
+  font-weight: 600;
+  letter-spacing: 2rpx;
+}
+
+.btn-subtext {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 24rpx;
+  text-align: center;
+  padding: 20rpx 0;
+  background: rgba(0, 0, 0, 0.1);
+  border-top: 1rpx solid rgba(255, 255, 255, 0.1);
+}
+
+/* 底部信息栏 */
+.info-bar {
+  position: fixed;
+  bottom: 40rpx;
+  left: 0;
+  right: 0;
+  z-index: 10;
+  display: flex;
+  justify-content: space-between;
+  padding: 0 40rpx;
+}
+
+.info-bar text {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 22rpx;
+  background: rgba(0, 0, 0, 0.5);
+  padding: 8rpx 16rpx;
+  border-radius: 20rpx;
+  backdrop-filter: blur(10px);
+}
+
+/* 响应式调整 */
+@media (max-width: 600rpx) {
+  .control-btn {
+    width: 90% !important;
+    bottom: 100rpx !important;
+  }
+  
+  .btn-text {
+    font-size: 32rpx;
+  }
+  
+  .status-bar {
+    top: 30rpx;
+  }
+  
+  .connection-status {
+    top: 30rpx;
+    right: 30rpx;
+  }
 }
