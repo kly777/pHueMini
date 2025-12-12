@@ -88,18 +88,32 @@ Page({
             frameProcessorModule.captureLoop.call(this);
             wx.showToast({ title: '开始实时分析', icon: 'none', duration: 1500 });
         } else {
-            // 停止所有循环
+            // 【关键增强】双重停止保障
+            this.setData({ isProcessing: false });
+            
+            // 立即停止捕获
             if (this.captureTimer) {
                 clearInterval(this.captureTimer);
                 this.captureTimer = null;
                 console.log('[PROCESS] 捕获定时器已清除');
             }
+            
+            // 清除待处理帧和渲染
             if (this.renderTimer) {
                 clearInterval(this.renderTimer);
                 this.renderTimer = null;
                 console.log('[PROCESS] 渲染定时器已清除');
             }
             rendererModule.clearCanvas.call(this);
+            
+            // 增强清理：确保不会继续处理
+            if (this.data.socketTask) {
+                this.data.socketTask.onMessage(() => {
+                    console.log('[WS] 已停止，忽略后续消息');
+                    return;
+                });
+            }
+            
             wx.showToast({ title: '已停止分析', icon: 'none', duration: 1000 });
 
             // 打印最终统计
@@ -142,17 +156,35 @@ Page({
         console.group('[LIFECYCLE] 页面卸载');
         console.log('- 停止实时处理');
         console.log(`- 最终状态: ${this.getSocketState()}`);
-        console.log(`- 会话统计: 发送${this.data.stats.sentFrames}帧, 接收${this.data.stats.receivedResults}结果`);
+        console.log(`- 会话统计: 发送${this.data.stats.sentFrames || 0}帧, 接收${this.data.stats.receivedResults || 0}结果`);
         console.groupEnd();
 
-        this.setData({ isProcessing: false });
-        if (this.captureTimer) {
-            clearInterval(this.captureTimer);
-            this.captureTimer = null;
-        }
+        // 【关键增强】强制关闭所有处理
+        this.setData({
+            isProcessing: false,
+            stats: {
+                ...this.data.stats,
+                sentFrames: this.data.stats.sentFrames || 0,
+                receivedResults: this.data.stats.receivedResults || 0
+            }
+        });
+        
+        // 确保 WebSocket 关闭
         if (this.data.socketTask) {
-            this.data.socketTask.close();
-            console.log('[WS] 主动关闭WebSocket连接');
+            try {
+                this.data.socketTask.close();
+            } catch (e) {
+                console.log('[WS] WebSocket 已关闭，无需重复操作');
+            }
         }
+        
+        // 清理所有定时器
+        [this.captureTimer, this.renderTimer].forEach(timer => {
+            if (timer) {
+                clearInterval(timer);
+            }
+        });
+        
+        console.log('[LIFECYCLE] 资源已完全释放');
     }
 });

@@ -29,6 +29,12 @@ module.exports = {
         });
 
         socketTask.onMessage((res) => {
+            // 【关键修复】立即检查处理状态，防止停止后继续处理
+            if (!this.data.isProcessing) {
+                console.log('[WS] 忽略消息：已停止处理');
+                return;
+            }
+
             const now = Date.now();
             const msgSize = res.data?.length || 0;
 
@@ -41,6 +47,12 @@ module.exports = {
                 });
 
                 if (data.type === 'result') {
+                    // 再次验证（双重保险）
+                    if (!this.data.isProcessing) {
+                        console.log('[WS] 忽略结果：已停止处理');
+                        return;
+                    }
+
                     this.setData(prev => ({
                         stats: { ...prev.stats, receivedResults: prev.stats.receivedResults + 1 }
                     }));

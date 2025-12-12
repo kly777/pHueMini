@@ -53,8 +53,11 @@ module.exports = {
     },
 
     async captureCameraFrame() {
+        // 【关键修复】确保 sentFrames 正确初始化，避免NaN问题
+        const currentSentFrames = this.data.stats?.sentFrames || 0;
+        
         return new Promise((resolve, reject) => {
-            console.log('[CAPTURE] 开始帧捕获流程（使用拍照）');
+            console.log(`[FRAME] #${currentSentFrames + 1} 开始捕获`);
             const cameraContext = this.data.cameraContext;
             if (!cameraContext) {
                 reject(new Error('摄像头上下文未初始化'));

@@ -1,8 +1,10 @@
 // renderer.js - 渲染模块
 module.exports = {
     renderResult(result, serverTimestamp) {
+        // 【关键修复】转换时间戳单位（秒 → 毫秒）
+        const serverTime = new Date(serverTimestamp * 1000);
         const renderStart = Date.now();
-        console.log(`[RENDER] 开始渲染结果 (服务器时间: ${new Date(serverTimestamp).toISOString()})`);
+        console.log(`[RENDER] 开始渲染结果 (服务器时间: ${serverTime.toISOString()})`);
 
         const ctx = this.data.canvasCtx;
         const systemInfo = wx.getSystemInfoSync();

@@ -105,18 +105,22 @@ module.exports = {
         const totalLatency = now - this.data.lastCaptureTime + serverLatency;
 
         // 每秒计算一次FPS
-        if (!this.lastStatsUpdate || now - this.lastStatsUpdate >= 1000) {
-            const actualFPS = this.data.stats.frameCount;
+        if (!this.data.lastStatsUpdate || now - this.data.lastStatsUpdate >= 1000) {
+            // 【关键修复】使用 sentFrames 计算实际FPS，避免因frameCount重置导致的错误
+            const currentSentFrames = this.data.stats.sentFrames;
+            const previousSentFrames = this.data.stats.frameCount || 0;
+            const actualFPS = currentSentFrames - previousSentFrames;
 
             this.setData({
                 stats: {
                     fps: actualFPS,
                     latency: Math.min(totalLatency, 1000),
-                    frameCount: 0
-                }
+                    // 保存当前 sentFrames 作为下次计算的基准
+                    frameCount: currentSentFrames
+                },
+                lastStatsUpdate: now
             });
 
-            this.lastStatsUpdate = now;
             console.log(`[STATS] 每秒统计: FPS=${actualFPS}, 延迟=${totalLatency.toFixed(1)}ms`);
         }
     }
